@@ -111,7 +111,12 @@ namespace WindowsFormsApp1
         }
 
         // --- Helper parsing methods ---
-
+        /// <summary>
+        /// Splits a single CSV line into individual fields, handling quoted fields with commas 
+        /// and escaped quotes (double quotes). Trims whitespace and removes surrounding quotes from each field.
+        /// </summary>
+        /// <param name="line">The CSV line to split</param>
+        /// <returns>An array of strings representing each field in the CSV line</returns>
         private static string[] SplitCsvLine(string line)
         {
             var fields = new List<string>();
@@ -159,7 +164,12 @@ namespace WindowsFormsApp1
 
             return fields.ToArray();
         }
-
+        /// <summary>
+        /// Removes surrounding quotes from a string (if present), replaces escaped quotes with single quotes, 
+        /// and trims leading and trailing whitespace.
+        /// </summary>
+        /// <param name="s">The string to unquote and trim</param>
+        /// <returns>The cleaned string with quotes removed and whitespace trimmed</returns>
         private static string UnquoteAndTrim(string s)
         {
             if (s == null) return string.Empty;
