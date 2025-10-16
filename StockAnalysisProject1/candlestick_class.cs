@@ -6,67 +6,86 @@ using System.Text;
 namespace WindowsFormsApp1
 {
     /// <summary>
-    /// Represents a single candlestick with OHLCV (Open, High, Low, Close, Volume) data
-    /// This class stores stock price data for a specific time period
+    /// Represents a single candlestick with OHLCV (Open, High, Low, Close, Volume) data.
+    /// Stores stock price data for a specific time period.
     /// </summary>
     public class aCandlestick
     {
         // Date and time of the candlestick
         public DateTime date { get; set; }
-        
+
         // Opening price for the period
         public decimal open { get; set; }
-        
+
         // Highest price during the period
         public decimal high { get; set; }
-        
+
         // Lowest price during the period
         public decimal low { get; set; }
-        
+
         // Closing price for the period
         public decimal close { get; set; }
-        
+
         // Trading volume for the period
         public ulong volume { get; set; }
 
         /// <summary>
-        /// Default constructor - creates an empty candlestick
+        /// Default constructor - creates an empty candlestick with default values.
         /// </summary>
         public aCandlestick()
         {
-            // Initialize with default values
-            date = DateTime.MinValue;
-            open = 0;
-            high = 0;
-            low = 0;
-            close = 0;
-            volume = 0;
+            date = DateTime.MinValue; // Initialize date with minimal value
+            open = 0;                  // Initialize open price to 0
+            high = 0;                  // Initialize high price to 0
+            low = 0;                   // Initialize low price to 0
+            close = 0;                 // Initialize close price to 0
+            volume = 0;                // Initialize volume to 0
+        }
+
+        /// <summary>
+        /// Parameterized constructor for creating a candlestick with specific values.
+        /// </summary>
+        /// <param name="date">Date and time of the candlestick</param>
+        /// <param name="open">Opening price</param>
+        /// <param name="high">Highest price</param>
+        /// <param name="low">Lowest price</param>
+        /// <param name="close">Closing price</param>
+        /// <param name="volume">Trading volume</param>
+        public aCandlestick(DateTime date, decimal open, decimal high, decimal low, decimal close, ulong volume)
+        {
+            this.date = date;   // Set date
+            this.open = open;   // Set open price
+            this.high = high;   // Set high price
+            this.low = low;     // Set low price
+            this.close = close; // Set close price
+            this.volume = volume; // Set volume
         }
 
         /// <summary>
         /// Constructor that creates a candlestick from a CSV line.
-        /// Expected CSV layout (example):
+        /// Expected CSV layout:
         /// "AAPL","D","2023-03-24","158.86","160.34","157.85","160.25","59256343",...
-        /// This constructor is robust to quoted fields and doubled quotes inside fields.
+        /// Handles quoted fields and doubled quotes.
         /// </summary>
         /// <param name="csvLine">A line from the CSV file containing candlestick data</param>
         public aCandlestick(string csvLine)
         {
+            // Validate that the CSV line is not null or empty
             if (string.IsNullOrWhiteSpace(csvLine))
                 throw new ArgumentException("CSV line is null or empty.", nameof(csvLine));
 
-            string[] values = SplitCsvLine(csvLine);
+            string[] values = SplitCsvLine(csvLine); // Split CSV line into fields
 
-            // We expect at least 8 columns: ticker, period, date, open, high, low, close, volume
+            // Ensure there are at least 8 fields (ticker, period, date, open, high, low, close, volume)
             if (values.Length < 8)
                 throw new FormatException("CSV line does not contain the expected number of fields.");
 
-            // Date is at index 2
+            // Parse date from index 2
             string dateStr = values[2];
             if (!TryParseDate(dateStr, out DateTime parsedDate))
                 throw new FormatException($"Unable to parse date '{dateStr}'.");
 
-            // Open/High/Low/Close at indices 3..6
+            // Parse Open, High, Low, Close prices from indices 3..6
             if (!TryParseDecimal(values[3], out decimal parsedOpen))
                 throw new FormatException($"Unable to parse open price '{values[3]}'.");
 
@@ -79,10 +98,11 @@ namespace WindowsFormsApp1
             if (!TryParseDecimal(values[6], out decimal parsedClose))
                 throw new FormatException($"Unable to parse close price '{values[6]}'.");
 
-            // Volume at index 7
+            // Parse volume from index 7
             if (!TryParseULong(values[7], out ulong parsedVolume))
                 throw new FormatException($"Unable to parse volume '{values[7]}'.");
 
+            // Assign parsed values to class properties
             date = parsedDate;
             open = parsedOpen;
             high = parsedHigh;
@@ -91,133 +111,140 @@ namespace WindowsFormsApp1
             volume = parsedVolume;
         }
 
-        /// <summary>
-        /// Parameterized constructor for creating a candlestick with specific values           
-        /// </summary>
-        /// <param name="date">Date and time of the candlestick</param>
-        /// <param name="open">Opening price</param>
-        /// <param name="high">Highest price</param>
-        /// <param name="low">Lowest price</param>
-        /// <param name="close">Closing price</param>
-        /// <param name="volume">Trading volume</param>
-        public aCandlestick(DateTime date, decimal open, decimal high, decimal low, decimal close, ulong volume)
-        {
-            this.date = date;
-            this.open = open;
-            this.high = high;
-            this.low = low;
-            this.close = close;
-            this.volume = volume;
-        }
-
         // --- Helper parsing methods ---
+
         /// <summary>
-        /// Splits a single CSV line into individual fields, handling quoted fields with commas 
-        /// and escaped quotes (double quotes). Trims whitespace and removes surrounding quotes from each field.
+        /// Splits a single CSV line into individual fields, handling quotes and escaped quotes.
         /// </summary>
-        /// <param name="line">The CSV line to split</param>
-        /// <returns>An array of strings representing each field in the CSV line</returns>
+        /// <param name="line">CSV line to split</param>
+        /// <returns>Array of field strings</returns>
         private static string[] SplitCsvLine(string line)
         {
-            var fields = new List<string>();
-            if (line == null) return fields.ToArray();
+            var fields = new List<string>(); // Store split fields
+            if (line == null) return fields.ToArray(); // Return empty array if null
 
-            var sb = new StringBuilder();
-            bool inQuotes = false;
+            var sb = new StringBuilder(); // Temporary buffer for current field
+            bool inQuotes = false;        // Track if inside quotes
+
             for (int i = 0; i < line.Length; i++)
             {
-                char c = line[i];
+                char c = line[i]; // Current character
 
-                if (c == '"')
+                if (c == '"') // Handle quotes
                 {
-                    // If this is a doubled quote inside a quoted field, append one quote and skip next
+                    // Doubled quote inside quoted field
                     if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
                     {
-                        sb.Append('"');
-                        i++; // skip the escaped quote
+                        sb.Append('"'); // Add one quote
+                        i++;             // Skip next quote
                     }
                     else
                     {
-                        // Toggle inQuotes state
-                        inQuotes = !inQuotes;
+                        inQuotes = !inQuotes; // Toggle inQuotes state
                     }
                 }
-                else if (c == ',' && !inQuotes)
+                else if (c == ',' && !inQuotes) // Field separator
                 {
-                    fields.Add(sb.ToString());
-                    sb.Clear();
+                    fields.Add(sb.ToString()); // Add current field
+                    sb.Clear();                // Clear buffer
                 }
                 else
                 {
-                    sb.Append(c);
+                    sb.Append(c); // Append character to field
                 }
             }
 
-            // add last field
-            fields.Add(sb.ToString());
+            fields.Add(sb.ToString()); // Add last field
 
-            // Trim whitespace and surrounding quotes from each field
+            // Clean up each field: remove quotes and trim
             for (int i = 0; i < fields.Count; i++)
             {
                 fields[i] = UnquoteAndTrim(fields[i]);
             }
 
-            return fields.ToArray();
-        }
-        /// <summary>
-        /// Removes surrounding quotes from a string (if present), replaces escaped quotes with single quotes, 
-        /// and trims leading and trailing whitespace.
-        /// </summary>
-        /// <param name="s">The string to unquote and trim</param>
-        /// <returns>The cleaned string with quotes removed and whitespace trimmed</returns>
-        private static string UnquoteAndTrim(string s)
-        {
-            if (s == null) return string.Empty;
-            s = s.Trim();
-            if (s.Length >= 2 && s[0] == '"' && s[s.Length - 1] == '"')
-            {
-                // remove surrounding quotes and replace doubled quotes with single quote
-                string inner = s.Substring(1, s.Length - 2);
-                return inner.Replace("\"\"", "\"").Trim();
-            }
-            return s;
+            return fields.ToArray(); // Return all fields
         }
 
+        /// <summary>
+        /// Removes surrounding quotes, replaces escaped quotes, and trims whitespace.
+        /// </summary>
+        /// <param name="s">Input string</param>
+        /// <returns>Cleaned string</returns>
+        private static string UnquoteAndTrim(string s)
+        {
+            if (s == null) return string.Empty; // Null input -> empty string
+
+            s = s.Trim(); // Remove leading/trailing whitespace
+
+            // If string is quoted, remove quotes and replace doubled quotes
+            if (s.Length >= 2 && s[0] == '"' && s[s.Length - 1] == '"')
+            {
+                string inner = s.Substring(1, s.Length - 2); // Remove surrounding quotes
+                return inner.Replace("\"\"", "\"").Trim();    // Replace doubled quotes and trim
+            }
+
+            return s; // Return unmodified if no surrounding quotes
+        }
+
+        /// <summary>
+        /// Attempts to parse a string into a DateTime using multiple formats.
+        /// </summary>
+        /// <param name="s">Input string</param>
+        /// <param name="dt">Parsed DateTime output</param>
+        /// <returns>True if successful</returns>
         private static bool TryParseDate(string s, out DateTime dt)
         {
-            // try exact known formats first, then fallback to TryParse with InvariantCulture
             string[] formats = new[] { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-ddTHH:mm:ss", "M/d/yyyy", "MM/dd/yyyy" };
+
+            // Try parsing using exact known formats
             if (DateTime.TryParseExact(s, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
                 return true;
 
+            // Fallback to general parsing
             return DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out dt);
         }
 
+        /// <summary>
+        /// Attempts to parse a string into a decimal using InvariantCulture.
+        /// </summary>
+        /// <param name="s">Input string</param>
+        /// <param name="d">Parsed decimal output</param>
+        /// <returns>True if successful</returns>
         private static bool TryParseDecimal(string s, out decimal d)
         {
-            // Accept decimal separator '.' using InvariantCulture
-            s = s?.Trim();
-            return decimal.TryParse(s, NumberStyles.Number | NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out d);
+            s = s?.Trim(); // Remove whitespace
+
+            // Parse decimal, allow leading sign and decimal point
+            return decimal.TryParse(s, NumberStyles.Number | NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign,
+                                    CultureInfo.InvariantCulture, out d);
         }
 
+        /// <summary>
+        /// Attempts to parse a string into an unsigned long (volume).
+        /// Handles numbers possibly formatted with decimal points.
+        /// </summary>
+        /// <param name="s">Input string</param>
+        /// <param name="value">Parsed ulong output</param>
+        /// <returns>True if successful</returns>
         private static bool TryParseULong(string s, out ulong value)
         {
-            s = s?.Trim();
-            // Some CSV exports may use decimals for volume (rare) — try to parse integer portion
+            s = s?.Trim(); // Remove whitespace
+
+            // Try direct ulong parse
             if (ulong.TryParse(s, NumberStyles.Integer | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out value))
                 return true;
 
-            // Try parse as decimal then cast
+            // If fails, parse as decimal then cast to ulong
             if (decimal.TryParse(s, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal dec))
             {
                 if (dec >= 0 && dec <= ulong.MaxValue)
                 {
-                    value = (ulong)dec;
+                    value = (ulong)dec; // Convert to ulong
                     return true;
                 }
             }
 
-            value = 0;
+            value = 0; // Default to 0 if parsing fails
             return false;
         }
     }
