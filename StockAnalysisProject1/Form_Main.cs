@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -13,11 +11,21 @@ namespace WindowsFormsApp1
     public partial class Form_Basic : Form
     {
         private List<aCandlestick> listOfCandlesticks = new List<aCandlestick>();
+        private BindingList<aCandlestick> boundCandlesticks = new BindingList<aCandlestick>();
 
         public Form_Basic()
         {
             InitializeComponent();
+
+            // Optional default date range
+            dateTimePicker_Start.Value = DateTime.Now.AddYears(-1);
+            dateTimePicker_End.Value = DateTime.Now;
+
+            // Initialize chart structure dynamically
+            InitializeChart();
         }
+
+        // ------------------ UI Event Handlers ------------------
 
         private void button_fireOpenFileDialog_Click(object sender, EventArgs e)
         {
@@ -28,26 +36,38 @@ namespace WindowsFormsApp1
         private void openFileDialog_fileSelector_FileOk(object sender, CancelEventArgs e)
         {
             string filename = openFileDialog_fileSelector.FileName;
-            Text = "Loading: " + filename;
+            this.Text = "Loading: " + filename;
 
+            // Load candlestick data
             listOfCandlesticks = readCandlestickFile(filename);
 
             if (listOfCandlesticks == null || listOfCandlesticks.Count == 0)
             {
-                MessageBox.Show("No candlestick data found.");
+                MessageBox.Show("No valid candlestick data found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Bind all data to grid initially
-            BindToDataGridView(listOfCandlesticks);
+            // Sort by date
+            listOfCandlesticks = listOfCandlesticks.OrderBy(c => c.date).ToList();
 
-            // Set date range pickers
-            dateTimePicker_Start.Value = listOfCandlesticks.First().date;
-            dateTimePicker_End.Value = listOfCandlesticks.Last().date;
+            // Bind full data
+            filterCandlesticks();
 
-            // Draw chart
-            RenderCandlestickChart(listOfCandlesticks);
+            this.Text = $"Loaded {listOfCandlesticks.Count} candlesticks from {Path.GetFileName(filename)}";
         }
+
+        private void button_Update_Click(object sender, EventArgs e)
+        {
+            if (listOfCandlesticks == null || listOfCandlesticks.Count == 0)
+            {
+                MessageBox.Show("Please load a stock file first.", "No Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            filterCandlesticks();
+        }
+
+        // ------------------ Core Methods ------------------
 
         private List<aCandlestick> readCandlestickFile(string tickerFile)
         {
@@ -59,11 +79,14 @@ namespace WindowsFormsApp1
                                 .Where(l => !string.IsNullOrWhiteSpace(l))
                                 .ToArray();
 
-                for (int i = 1; i < lines.Length; i++) // Skip header
+                // Skip header (index 0)
+                for (int i = 1; i < lines.Length; i++)
                 {
+                    string line = lines[i];
                     try
                     {
-                        candlesticks.Add(new aCandlestick(lines[i]));
+                        var c = new aCandlestick(line);
+                        candlesticks.Add(c);
                     }
                     catch (Exception ex)
                     {
@@ -73,92 +96,105 @@ namespace WindowsFormsApp1
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error reading file: " + ex.Message);
+                MessageBox.Show($"Error reading file: {ex.Message}", "File Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
-            return candlesticks.OrderBy(c => c.date).ToList();
+            return candlesticks;
         }
 
-        // Filters and rebinds the chart and grid
-        private void button_Update_Click(object sender, EventArgs e)
+        private void filterCandlesticks()
         {
-            if (listOfCandlesticks == null || listOfCandlesticks.Count == 0)
-                return;
+            var start = dateTimePicker_Start.Value.Date;
+            var end = dateTimePicker_End.Value.Date;
 
-            var filtered = filterCandlesticks(
-                listOfCandlesticks,
-                dateTimePicker_Start.Value,
-                dateTimePicker_End.Value
-            );
+            var filtered = listOfCandlesticks
+                .Where(c => c.date >= start && c.date <= end)
+                .OrderBy(c => c.date)
+                .ToList();
 
-            BindToDataGridView(filtered);
+            boundCandlesticks = new BindingList<aCandlestick>(filtered);
+            dataGridView1.DataSource = boundCandlesticks;
+
             RenderCandlestickChart(filtered);
         }
 
-        public List<aCandlestick> filterCandlesticks(List<aCandlestick> unfilteredList, DateTime startDate, DateTime endDate)
-        {
-            return unfilteredList
-                .Where(c => c.date >= startDate && c.date <= endDate)
-                .OrderBy(c => c.date)
-                .ToList();
-        }
+        // ------------------ Chart Configuration ------------------
 
-        // ---------------- Binding & Chart Rendering ----------------
-
-        private void BindToDataGridView(List<aCandlestick> data)
-        {
-            dataGridView1.DataSource = null;
-            dataGridView1.DataSource = new BindingList<aCandlestick>(data);
-            dataGridView1.AutoResizeColumns();
-        }
-
-        private void RenderCandlestickChart(List<aCandlestick> data)
+        private void InitializeChart()
         {
             chart1.Series.Clear();
             chart1.ChartAreas.Clear();
 
-            var area = new ChartArea("MainArea");
-            area.AxisX.LabelStyle.Format = "MM/dd";
-            area.AxisX.MajorGrid.LineColor = Color.LightGray;
-            area.AxisY.MajorGrid.LineColor = Color.LightGray;
-            chart1.ChartAreas.Add(area);
+            // Main area for OHLC
+            ChartArea areaPrice = new ChartArea("ChartArea_OHLC");
+            areaPrice.AxisX.LabelStyle.Format = "MM/dd";
+            areaPrice.AxisX.MajorGrid.LineColor = System.Drawing.Color.LightGray;
+            areaPrice.AxisY.MajorGrid.LineColor = System.Drawing.Color.LightGray;
+            areaPrice.AxisY.Title = "Price";
+            chart1.ChartAreas.Add(areaPrice);
 
-            // ----- Candlestick Series -----
-            Series candleSeries = new Series("Price");
-            candleSeries.ChartType = SeriesChartType.Candlestick;
-            candleSeries.XValueType = ChartValueType.Date;
-            candleSeries.YValuesPerPoint = 4;
-            candleSeries["OpenCloseStyle"] = "Triangle";
-            candleSeries["ShowOpenClose"] = "Both";
-            candleSeries["PriceUpColor"] = "Green";
-            candleSeries["PriceDownColor"] = "Red";
+            // Volume area
+            ChartArea areaVolume = new ChartArea("ChartArea_Volume");
+            areaVolume.AlignWithChartArea = "ChartArea_OHLC";
+            areaVolume.AlignmentOrientation = AreaAlignmentOrientations.Vertical;
+            areaVolume.AxisX.LabelStyle.Format = "MM/dd";
+            areaVolume.AxisY.MajorGrid.Enabled = false;
+            areaVolume.AxisY.Title = "Volume";
+            chart1.ChartAreas.Add(areaVolume);
 
-            foreach (var c in data)
-            {
-                int pointIndex = candleSeries.Points.AddXY(c.date, c.high);
-                var pt = candleSeries.Points[pointIndex];
-                pt.YValues = new double[] { (double)c.high, (double)c.low, (double)c.open, (double)c.close };
-            }
+            // Price series
+            Series sPrice = new Series("Series_OHLC");
+            sPrice.ChartType = SeriesChartType.Candlestick;
+            sPrice.ChartArea = "ChartArea_OHLC";
+            sPrice.XValueType = ChartValueType.Date;
+            sPrice.YValuesPerPoint = 4;
+            sPrice.CustomProperties = "PriceDownColor=Red,PriceUpColor=Lime";
+            sPrice["OpenCloseStyle"] = "Triangle";
+            sPrice["ShowOpenClose"] = "Both";
+            chart1.Series.Add(sPrice);
 
-            chart1.Series.Add(candleSeries);
-
-            // ----- Volume Series -----
-            Series volSeries = new Series("Volume");
-            volSeries.ChartType = SeriesChartType.Column;
-            volSeries.YAxisType = AxisType.Secondary;
-            volSeries.XValueType = ChartValueType.Date;
-
-            foreach (var c in data)
-            {
-                volSeries.Points.AddXY(c.date, (double)c.volume);
-            }
-
-            chart1.Series.Add(volSeries);
-
-            // Configure Y2 axis for volume
-            area.AxisY2.Enabled = AxisEnabled.True;
-            area.AxisY2.MajorGrid.Enabled = false;
-            area.AxisY2.Title = "Volume";
+            // Volume series
+            Series sVolume = new Series("Series_Volume");
+            sVolume.ChartType = SeriesChartType.Column;
+            sVolume.ChartArea = "ChartArea_Volume";
+            sVolume.XValueType = ChartValueType.Date;
+            sVolume.YAxisType = AxisType.Primary;
+            chart1.Series.Add(sVolume);
         }
+
+        private void RenderCandlestickChart(List<aCandlestick> data)
+        {
+            if (data == null || data.Count == 0)
+            {
+                chart1.Series["Series_OHLC"].Points.Clear();
+                chart1.Series["Series_Volume"].Points.Clear();
+                return;
+            }
+
+            // Clear old data
+            chart1.Series["Series_OHLC"].Points.Clear();
+            chart1.Series["Series_Volume"].Points.Clear();
+
+            foreach (var c in data)
+            {
+                int idx = chart1.Series["Series_OHLC"].Points.AddXY(c.date, c.high);
+                var pt = chart1.Series["Series_OHLC"].Points[idx];
+                pt.YValues = new double[] { (double)c.high, (double)c.low, (double)c.open, (double)c.close };
+
+                chart1.Series["Series_Volume"].Points.AddXY(c.date, (double)c.volume);
+            }
+
+            // Normalize Y range
+            double min = (double)data.Min(c => c.low) * 0.98;
+            double max = (double)data.Max(c => c.high) * 1.02;
+            chart1.ChartAreas["ChartArea_OHLC"].AxisY.Minimum = min;
+            chart1.ChartAreas["ChartArea_OHLC"].AxisY.Maximum = max;
+        }
+
+        // ------------------ Optional Event Handlers ------------------
+
+        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e) { }
+
+        private void chart1_Click(object sender, EventArgs e) { }
     }
 }
