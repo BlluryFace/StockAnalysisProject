@@ -19,7 +19,7 @@
             }
             base.Dispose(disposing);
         }
-
+            
         #region Windows Form Designer generated code
 
         /// <summary>
@@ -44,14 +44,16 @@
             this.label_StartDate = new System.Windows.Forms.Label();
             this.label_EndDate = new System.Windows.Forms.Label();
             this.button_Update = new System.Windows.Forms.Button();
+            this.comboBox_Period = new System.Windows.Forms.ComboBox();
+            this.label_Period = new System.Windows.Forms.Label();
             this.dataGridView_Candles = new System.Windows.Forms.DataGridView();
             this.chart_Candles = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.label_Status = new System.Windows.Forms.Label();
+            this.label_StockSymbol = new System.Windows.Forms.Label();
             this.aCandlestickBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.aCandlestickBindingSource1 = new System.Windows.Forms.BindingSource(this.components);
             this.aCandlestickBindingSource2 = new System.Windows.Forms.BindingSource(this.components);
             this.programBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.label_StockSymbol = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView_Candles)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.chart_Candles)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.aCandlestickBindingSource)).BeginInit();
@@ -129,6 +131,25 @@
             this.button_Update.UseVisualStyleBackColor = true;
             this.button_Update.Click += new System.EventHandler(this.button_Update_Click);
             // 
+            // comboBox_Period
+            // 
+            this.comboBox_Period.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBox_Period.FormattingEnabled = true;
+            this.comboBox_Period.Location = new System.Drawing.Point(473, 32);
+            this.comboBox_Period.Name = "comboBox_Period";
+            this.comboBox_Period.Size = new System.Drawing.Size(160, 28);
+            this.comboBox_Period.TabIndex = 10;
+            this.comboBox_Period.SelectedIndexChanged += new System.EventHandler(this.comboBox_Period_SelectedIndexChanged);
+            // 
+            // label_Period
+            // 
+            this.label_Period.AutoSize = true;
+            this.label_Period.Location = new System.Drawing.Point(409, 35);
+            this.label_Period.Name = "label_Period";
+            this.label_Period.Size = new System.Drawing.Size(58, 20);
+            this.label_Period.TabIndex = 11;
+            this.label_Period.Text = "Period:";
+            // 
             // dataGridView_Candles
             // 
             this.dataGridView_Candles.AllowUserToAddRows = false;
@@ -181,7 +202,7 @@
             this.chart_Candles.ChartAreas.Add(chartArea2);
             legend1.Name = "Legend1";
             this.chart_Candles.Legends.Add(legend1);
-            this.chart_Candles.Location = new System.Drawing.Point(725, 11);
+            this.chart_Candles.Location = new System.Drawing.Point(727, 11);
             this.chart_Candles.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.chart_Candles.Name = "chart_Candles";
             series1.ChartArea = "ChartArea_OHLC";
@@ -214,6 +235,16 @@
             this.label_Status.TabIndex = 8;
             this.label_Status.Text = "Ready";
             // 
+            // label_StockSymbol
+            // 
+            this.label_StockSymbol.AutoSize = true;
+            this.label_StockSymbol.Location = new System.Drawing.Point(261, 35);
+            this.label_StockSymbol.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label_StockSymbol.Name = "label_StockSymbol";
+            this.label_StockSymbol.Size = new System.Drawing.Size(54, 20);
+            this.label_StockSymbol.TabIndex = 9;
+            this.label_StockSymbol.Text = "Stock:";
+            // 
             // aCandlestickBindingSource
             // 
             this.aCandlestickBindingSource.DataSource = typeof(WindowsFormsApp1.aCandlestick);
@@ -230,16 +261,6 @@
             // 
             this.programBindingSource.DataSource = typeof(StockAnalysisProject1.Program);
             // 
-            // label_StockSymbol
-            // 
-            this.label_StockSymbol.AutoSize = true;
-            this.label_StockSymbol.Location = new System.Drawing.Point(261, 35);
-            this.label_StockSymbol.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.label_StockSymbol.Name = "label_StockSymbol";
-            this.label_StockSymbol.Size = new System.Drawing.Size(54, 20);
-            this.label_StockSymbol.TabIndex = 9;
-            this.label_StockSymbol.Text = "Stock:";
-            // 
             // Form_Basic
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
@@ -254,6 +275,8 @@
             this.Controls.Add(this.label_StartDate);
             this.Controls.Add(this.dateTimePicker_End);
             this.Controls.Add(this.dateTimePicker_Start);
+            this.Controls.Add(this.comboBox_Period);
+            this.Controls.Add(this.label_Period);
             this.Controls.Add(this.button_fireOpenFileDialog);
             this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.MinimumSize = new System.Drawing.Size(1339, 893);
@@ -279,6 +302,8 @@
         private System.Windows.Forms.Label label_StartDate;
         private System.Windows.Forms.Label label_EndDate;
         private System.Windows.Forms.Button button_Update;
+        private System.Windows.Forms.ComboBox comboBox_Period;
+        private System.Windows.Forms.Label label_Period;
         private System.Windows.Forms.DataGridView dataGridView_Candles;
         private System.Windows.Forms.DataVisualization.Charting.Chart chart_Candles;
         private System.Windows.Forms.Label label_Status;
